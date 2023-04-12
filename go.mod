@@ -3,6 +3,7 @@ module github.com/jackjack-iot/supercharged-chainsaw-go
 go 1.19
 
 require (
+	github.com/joho/godotenv v1.5.1
 	github.com/rabbitmq/amqp091-go v1.8.0
 	go.mongodb.org/mongo-driver v1.11.4
 )

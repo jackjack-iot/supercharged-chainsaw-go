@@ -2,16 +2,25 @@ package main
 
 import (
 	"context"
+	"encoding/base32"
 	"fmt"
 	"github.com/jackjack-iot/supercharged-chainsaw-go/pkg/utilities"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
+	"os"
 	"time"
 )
 
 func main() {
 	var err error
+	err = godotenv.Load()
+	if err != nil {
+		log.Fatal("Unable to find env file")
+		return
+	}
+
 	err = MongoDbSetup()
 	if err != nil {
 		log.Fatal(err)
@@ -21,6 +30,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	TOTP := GenerateTOTP()
+	fmt.Printf("OTP: %06d\n", TOTP)
 }
 
 func MongoDbSetup() error {
@@ -94,4 +106,27 @@ func RabbitMqSetup() error {
 
 	time.Sleep(time.Second * 10)
 	return nil
+}
+
+func GenerateTOTP() int {
+	secret := os.Getenv("SECRET_KEY") // Your secret key
+	if secret == "" {
+		fmt.Println("Error: no secret key provided")
+		return -1
+	}
+	key, err := base32.StdEncoding.DecodeString(secret)
+	if err != nil {
+		fmt.Println("Error decoding secret key:", err)
+		return -2
+	}
+	counter := time.Now().Unix() / utilities.OtpInterval
+	OTPU := utilities.NewOtpUtilities(key)
+
+	otp, err := OTPU.TOTPToken(counter, utilities.SixDigits)
+	if err != nil {
+		fmt.Println("Error generating OTP:", err)
+		return -3
+	}
+
+	return otp
 }
